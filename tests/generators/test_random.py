@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import pytest
 from dynamicprompts.generators.randomprompt import RandomPromptGenerator
 from dynamicprompts.wildcards import WildcardManager
@@ -31,3 +33,15 @@ class TestRandomGenerator:
     def test_without_wildcard_manager(self):
         generator = RandomPromptGenerator()
         assert generator._context.wildcard_manager.path is None
+
+    def test_generate_with_seeds_wrong_length(self, generator: RandomPromptGenerator):
+        with pytest.raises(ValueError) as exc_info:
+            generator.generate(num_images=2, seeds=[42])
+        assert str(exc_info.value) == "Expected 2 seeds, but got 1"
+
+    def test_generate_with_template_and_seeds(self, generator: RandomPromptGenerator):
+        with patch.object(generator._context.rand, "seed", autospec=True) as mock_seed:
+            generator.generate(template="test_template", num_images=2, seeds=[42, 43])
+
+            mock_seed.assert_any_call(42)
+            mock_seed.assert_any_call(43)
